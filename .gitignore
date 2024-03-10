@@ -7,3 +7,6 @@ phi2/
 datasets/
 data/
 images/
+*.pkl
+*.swp
+catboost_info/
