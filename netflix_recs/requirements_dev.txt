@@ -1,0 +1,3 @@
+jupyter
+pandas-stubs~=2.2
+types-openpyxl~=3.1
