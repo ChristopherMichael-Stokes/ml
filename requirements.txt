@@ -1,0 +1,15 @@
+scikit-learn~=1.4.1
+plotly~=5.2
+matplotlib~=3.8
+pandas~=2.2
+catboost~=1.2
+torch~=2.2.2
+transformers>=4.39.2
+datasets~=2.81
+accelerate~=0.28
+bitsandbytes~=0.43
+langchain~=0.1.13
+langchain_core~=0.1.36
+langchain_community~=0.0.29
+faiss_cpu~=1.8
+jupyter==1.0.0
