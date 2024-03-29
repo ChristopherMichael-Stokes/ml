@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  database:
+    image: 'pgvector/pgvector:pg16'
+    ports:
+      - 15432:5432
+    expose:
+      - 5432
+    env_file:
+      - .env
+    # networks:
+    #   - postgres-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - 15433:80
+    env_file:
+      - .env
+    depends_on:
+      - database
+    # networks:
+    #   - postgres-network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin/
+  
+  mlflow:
+    image: mlflow/mlflow-psycopg2
+    build: 
+      context: .
+      dockerfile: mlflow.Dockerfile
+    # image: mlflow:v2.0.1
+    # command: mlflow server --host 0.0.0.0 --port 5021 --backend-store-uri "postgresql+psycopg2://user:password@hostname/database_name" --default-artifact-root /tmp
+    command: mlflow server --host 0.0.0.0 --port 5021 --backend-store-uri "postgresql+psycopg2://postgres:postgres@database:5432/vector_db"
+    expose: 
+      - 5021:5021
+    # networks: 
+    #   - postgres-network
+    volumes:
+      - mlruns:/mlruns
+
+
+# networks: 
+#   postgres-network:
+#     driver: bridge
+
+volumes:
+  pgadmin-data:
+  pgdata:
+  mlruns:
