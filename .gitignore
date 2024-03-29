@@ -10,3 +10,12 @@ images/
 *.pkl
 *.swp
 catboost_info/
+.mypy_cache
+
+notebooks/.env
+notebooks/qwen-2-*b/**/*
+!notebooks/qwen-2-*b/.gitkeep
+notebooks/bge-large/**/*
+!notebooks/bge-large/.gitkeep
+
+
