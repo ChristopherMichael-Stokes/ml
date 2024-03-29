@@ -1,11 +1,18 @@
+import logging
+
 import gradio as gr
 import llm_lib
 
-print("Loading llm")
+logging.basicConfig(filename="output/info.log", level=logging.INFO)
+
+log = logging.getLogger(__name__)
+
+
+log.info("Loading llm")
 llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", 8192, True)
-print("loading embedding")
+log.info("loading embedding")
 embedder = llm_lib.construct_bge_model("bge-large")
-print("starting app")
+log.info("configuring app")
 
 
 def echo(message, history):
@@ -56,4 +63,6 @@ demo = gr.ChatInterface(
     multimodal=True,
 ).queue()
 
+
+log.info("starting app")
 demo.launch(server_port=7860)
