@@ -1,0 +1,10 @@
+# models
+bge-large/**/*
+!bge-large/.gitkeep
+qwen-2-7b/**/*
+!qwen-2-7b/.gitkeep
+output/**/*
+!output/.gitkeep
+
+# credentials
+.env

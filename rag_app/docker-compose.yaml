@@ -1,0 +1,28 @@
+services:
+  llama_backend: 
+    image: llama-cpp-python/llm_backend
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    entrypoint: ["python","rag_client.py"]
+    volumes:
+      - ./qwen-2-7b:/app/qwen-2-7b
+      - ./bge-large:/app/bge-large
+    ports: 
+      - 7860:7860
+    # Pytorch / cuda configuration options
+    ipc: host
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
