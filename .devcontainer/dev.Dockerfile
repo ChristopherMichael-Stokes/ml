@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:22.12-py3
+FROM nvcr.io/nvidia/pytorch:24.01-py3
 
 ENV HOST docker
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -30,14 +30,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python packages
 ENV PIP_NO_CACHE_DIR=1
-RUN pip install ninja
-RUN MAX_JOBS=8 pip install flash-attn==2.5.6
+# RUN pip install ninja
+# RUN MAX_JOBS=8 pip install flash-attn==2.5.6
 RUN pip install git+https://github.com/HazyResearch/flash-attention@v2.5.6#subdirectory=csrc/fused_dense_lib
 RUN pip install jupyter pandas matplotlib scikit-learn plotly catboost gradio
 RUN pip install transformers>=4.39.2 accelerate bitsandbytes datasets
+RUN pip install tensorflow keras_nlp  
+RUN pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+RUN pip install tensorflow_datasets
 
 
-WORKDIR /app
+RUN chsh -s /bin/zsh
+RUN yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+RUN sed -i 's/plugins=(git)/plugins=(git vi-mode)/' /root/.zshrc # ohmyzsh plugins
+RUN printf "export EDITOR='vim'\nbindkey -v" >> /root/.zshrc # set vim keybinds for zsh, use vim as default editor
 
-COPY llm_lib.py rag_client.py .
-
+# RUN ln -sf /bin/zsh /bin/bash
