@@ -7,9 +7,11 @@ logging.basicConfig(filename="output/info.log", level=logging.INFO)
 
 log = logging.getLogger(__name__)
 
+# TODO: add config / env file
 
 log.info("Loading llm")
-llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", 8192, True)
+# llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", stream=True) #context_size=8192, stream=True)
+llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", context_size=32768, stream=True)
 log.info("loading embedding")
 embedder = llm_lib.construct_bge_model("bge-large")
 log.info("configuring app")
@@ -65,4 +67,5 @@ demo = gr.ChatInterface(
 
 
 log.info("starting app")
-demo.launch(server_port=7860)
+demo.launch(server_name='0.0.0.0', server_port=7860, )
+log.info("app up")
