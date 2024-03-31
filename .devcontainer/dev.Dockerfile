@@ -46,3 +46,5 @@ RUN sed -i 's/plugins=(git)/plugins=(git vi-mode)/' /root/.zshrc # ohmyzsh plugi
 RUN printf "export EDITOR='vim'\nbindkey -v" >> /root/.zshrc # set vim keybinds for zsh, use vim as default editor
 
 # RUN ln -sf /bin/zsh /bin/bash
+RUN git config user.name chris-stokes
+RUN git config user.email christophermichaelstokes@gmail.com

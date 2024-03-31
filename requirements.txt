@@ -13,3 +13,8 @@ langchain_core~=0.1.36
 langchain_community~=0.0.29
 faiss_cpu~=1.8
 jupyter==1.0.0
+keras_nlp~=0.8
+tensorflow[and-cuda]
+tensorrt~=8.6.1
+jax[cuda12_pip] @ https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
