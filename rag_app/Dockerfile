@@ -1,4 +1,5 @@
-FROM nvcr.io/nvidia/pytorch:24.01-py3
+# FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04
 
 ENV HOST docker
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -9,31 +10,24 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
-    curl \
-    ca-certificates \
-    sudo \
-    less \
-    htop \
-    git \
-    tzdata \
-    wget \
-    tmux \
-    zip \
-    unzip \
-    zsh stow subversion fasd \
+    python3.10 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
 ENV PIP_NO_CACHE_DIR=1
-# RUN pip install uv  # <-- tried uv (way faster) but found annoying runtime issues
-# RUN uv venv --system-site-packages
-# RUN source .venv/bin/activate
-# RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 uv pip install 'llama-cpp-python[server]'
-# RUN uv pip install jupyter gradio langchain langchain-community langchain-core transformers>=4.39.2 accelerate bitsandbytes sentence_transformers
-RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 pip install 'llama-cpp-python'
-RUN pip install jupyter gradio langchain langchain-community langchain-core transformers>=4.39.2 accelerate bitsandbytes sentence_transformers python_dotenv
+RUN pip install --upgrade pip
+# Flash attention and pytorch
+RUN pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.6/flash_attn-2.5.6+cu122torch2.2cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+# llamacpp
+# RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" FORCE_CMAKE=1 pip install llama-cpp-python
+RUN pip install llama-cpp-python
+# huggingface
+RUN pip install transformers accelerate bitsandbytes sentence_transformers 
+# generic
+RUN pip install gradio langchain langchain-text-splitters langchain-community langchain-core python_dotenv
 
 
-COPY llm_lib.py  .
-COPY rag_client.py . 
+WORKDIR /app
+COPY *.py  .
+
+RUN ln -s /usr/bin/python3.10 /usr/bin/python
