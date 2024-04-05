@@ -6,7 +6,7 @@ import llm_lib
 import torch
 from transformers import BitsAndBytesConfig
 
-DEBUG = True
+DEBUG = False 
 if DEBUG:
     base_path = Path("./rag_app")
 else:
@@ -57,6 +57,9 @@ def echo(message, history):
     #     thread.join()  # Don't like this as could continue generating very long prompt
     # Best solution for now is to just disable stop button as it cannot be trusted !!!
 
+
+    history = llm_lib.ChatHistory.model_validate(history)
+    llm.chat_history.history = history
     prompt = message["text"]
     if "files" in message and message["files"]:
         # update the rag index
