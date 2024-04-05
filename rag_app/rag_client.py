@@ -1,61 +1,74 @@
 import logging
+from pathlib import Path
 
 import gradio as gr
 import llm_lib
+import torch
+from transformers import BitsAndBytesConfig
 
-logging.basicConfig(filename="output/info.log", level=logging.INFO)
-
-log = logging.getLogger(__name__)
+DEBUG = True
+if DEBUG:
+    base_path = Path("./rag_app")
+else:
+    base_path = Path("./")
 
 # TODO: add config / env file
 
-log.info("Loading llm")
-# llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", stream=True) #context_size=8192, stream=True)
-llm = llm_lib.construct_ggml_model("qwen-2-7b/ggml-model-Q4_K_M.gguf", context_size=32768, stream=True)
-log.info("loading embedding")
-embedder = llm_lib.construct_bge_model("bge-large")
-log.info("configuring app")
+# log.info("Loading llm")
+load_params = {
+    "quantization_config": BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    ),
+    "device_map": "auto",
+}
+
+generate_params = {
+    "temperature": 0.5,
+    "max_new_tokens": 8192,
+}
+
+system_prompt = (
+    "You are an expert career adviser and life coach helping users to plan their future."
+    " Please respond truthfully and accurately, and if there is any CONTEXT information then use it to"
+    " inform your answers.  Keep answers brief, do not repeat your self and do not include redundant information.",
+)
+llm = llm_lib.StreamingLLM(
+    "hf", str(base_path / "qwen-2-7b/"), load_params, generate_params
+)  # , system_prompt=system_prompt)
+
+# log.info("loading embedding")
+embedder = llm_lib.construct_bge_model(str(base_path / "bge-large"))
+# log.info("configuring app")
 
 
 def echo(message, history):
+    # TODO: implement some prompt token reduction techniques
+    # ... or just limit the chat window to the make tokens length to preserve
+    # fidelity
 
-    # TODO: Do some proper conversation chaining
+    # for thread in llm_lib.GENERATION_THREADS:
+    #     # TODO: bug here with threads not getting closed properly when
+    #     # 'stop is clicked, only terminating properly when the latest thread
+    #     # is consumed
+    #     print(thread)
+    #     thread.join()  # Don't like this as could continue generating very long prompt
+    # Best solution for now is to just disable stop button as it cannot be trusted !!!
 
     prompt = message["text"]
-    prompt_message = [
-        {
-            "role": "system",
-            "content": "You are an expert career adviser and life coach helping users to plan their future."
-            " Please respond truthfully and accurately, and if there is any CONTEXT information then use it to"
-            " inform your answers.  Keep answers brief, do not repeat your self and do not include redundant information.",
-        },
-    ]
     if "files" in message and message["files"]:
         # update the rag index
         vector_store = llm_lib.construct_rag_store([f["path"] for f in message["files"]], embedder)
-
         context = llm_lib.context_retrieval({"prompt": prompt}, vector_store)
-        prompt_message.append({"role": "user", "content": f"{prompt}\n\nCONTEXT\n{context}"})
-    else:
-        # just prompt without context
-        prompt_message.append({"role": "user", "content": prompt})
+        prompt = f"{prompt}\n\nCONTEXT\n{context}"
 
-    completion = llm.create_chat_completion(messages=prompt_message, temperature=0.1, stream=True)
+    completion = llm.generate(prompt)
 
     next(completion)  # skip assistant line
-
-    text = ""
-    for tok in completion:
-        if not tok["choices"]:
-            break
-
-        choice = tok["choices"][0]
-        if not choice["delta"]:
-            break
-
-        text += choice["delta"]["content"]
-        yield text
-    # return completion["choices"][0]["message"]["content"]
+    for part in completion:
+        yield part
 
 
 demo = gr.ChatInterface(
@@ -63,9 +76,13 @@ demo = gr.ChatInterface(
     # examples=[{"text": "hello"}, {"text": "hola"}, {"text": "merhaba"}],
     title="Sophias Echo Bot",
     multimodal=True,
+    stop_btn=gr.Button("Don't click, I'm broken 🥲🥺"),
 ).queue()
 
 
-log.info("starting app")
-demo.launch(server_name='0.0.0.0', server_port=7860, )
-log.info("app up")
+# log.info("starting app")
+demo.launch(
+    server_name="0.0.0.0",
+    server_port=7860,
+)
+# log.info("app up")
