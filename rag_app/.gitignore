@@ -3,6 +3,8 @@ bge-large/**/*
 !bge-large/.gitkeep
 qwen-2-7b/**/*
 !qwen-2-7b/.gitkeep
+qwen-2-7b-4bit/**/*
+!qwen-2-7b-4bit/.gitkeep
 output/**/*
 !output/.gitkeep
 
