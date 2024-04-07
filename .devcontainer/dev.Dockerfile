@@ -39,10 +39,11 @@ RUN pip install tensorflow keras_nlp tensorflow_datasets
 RUN pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 # Transformer libraries
 RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
-RUN pip install transformers>=4.39.2 accelerate bitsandbytes datasets
+RUN pip install git+https://github.com/huggingface/transformers
+RUN pip install accelerate bitsandbytes datasets evaluate gradio lm_eval sentence_transformers autoawq
 # General python libs
 RUN pip install jupyter pandas matplotlib scikit-learn plotly catboost \
-        gradio python_dotenv langchain langchain_community
+        python_dotenv langchain langchain-community langchain-core langchain-text-splitters 
 
 
 RUN chsh -s /bin/zsh
