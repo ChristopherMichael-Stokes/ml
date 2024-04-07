@@ -54,7 +54,7 @@ except ModuleNotFoundError:
 
 CHAT_ROLE = Literal["assistant"] | Literal["user"]
 
-GENERATION_THREADS = []
+GENERATION_THREADS: List[threading.Thread] = []
 
 
 class ChatMessage(BaseModel):
@@ -96,10 +96,6 @@ def load_hf_model(
         tokenizer=tokenizer,
         streamer=streamer,
         **(generation_params if generation_params else {}),
-        # max_new_tokens=1024,
-        # temperature=0.5,
-        # top_k=500,
-        # do_sample=True,
     )
 
     return (pipe, streamer)
@@ -110,11 +106,7 @@ def load_ggml_model(model_path: str, load_options: dict) -> Llama:
         model_path=model_path,
         stream=True,
         **load_options,
-        # n_threads=int(os.cpu_count() * 0.8),
-        # n_gpu_layers=20,
-        # n_ctx=context_size,
-        # chat_format="chatml",
-        # verbose=True,
+        chat_format="chatml",
     )
 
     return llm

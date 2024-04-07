@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import gradio as gr
@@ -6,7 +5,7 @@ import llm_lib
 import torch
 from transformers import BitsAndBytesConfig
 
-DEBUG = False 
+DEBUG = True
 if DEBUG:
     base_path = Path("./rag_app")
 else:
@@ -14,14 +13,14 @@ else:
 
 # TODO: add config / env file
 
-# log.info("Loading llm")
 load_params = {
-    "quantization_config": BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    ),
+    # "quantization_config": BitsAndBytesConfig(
+    #     load_in_4bit=True,
+    #     bnb_4bit_quant_type="nf4",
+    #     bnb_4bit_use_double_quant=True,
+    #     bnb_4bit_compute_dtype=torch.bfloat16,
+    # ),
+    "torch_dtype": "auto",
     "device_map": "auto",
 }
 
@@ -36,7 +35,12 @@ system_prompt = (
     " inform your answers.  Keep answers brief, do not repeat your self and do not include redundant information.",
 )
 llm = llm_lib.StreamingLLM(
-    "hf", str(base_path / "qwen-2-7b/"), load_params, generate_params
+    "hf",
+    str(base_path / "qwen-2-7b-4bit/"),
+    # str(base_path / "qwen-2-7b/"),
+    # "Qwen/Qwen1.5-7B-Chat-GPTQ-Int4",
+    load_params,
+    generate_params,
 )  # , system_prompt=system_prompt)
 
 # log.info("loading embedding")
@@ -56,10 +60,26 @@ def echo(message, history):
     #     print(thread)
     #     thread.join()  # Don't like this as could continue generating very long prompt
     # Best solution for now is to just disable stop button as it cannot be trusted !!!
+    for thread in llm_lib.GENERATION_THREADS:
+        thread._stp
+        thread.interrupt()
 
+    # TODO: fix the parsing of history thing, it's just an unlabeled list of all messages
+    # from both sides:  Input should be a valid dictionary or instance of ChatMessage [type=model_type, input_value=['Can you give detailed a... with your job search!'], input_type=list]
 
-    history = llm_lib.ChatHistory.model_validate(history)
-    llm.chat_history.history = history
+    # history = llm_lib.ChatHistory.model_validate({"history": history})
+    # llm.chat_history.history = history.history
+    llm.chat_history.history = []
+    for i, content in enumerate(history):
+        llm.chat_history.history.append(
+            llm_lib.ChatMessage.model_validate({"role": "user", "content": content[0]})
+        )
+        if not content[1]:
+            break
+        llm.chat_history.history.append(
+            llm_lib.ChatMessage.model_validate({"role": "assistant", "content": content[1]})
+        )
+
     prompt = message["text"]
     if "files" in message and message["files"]:
         # update the rag index

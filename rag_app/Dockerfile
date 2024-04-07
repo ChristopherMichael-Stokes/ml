@@ -24,7 +24,7 @@ RUN pip install llama-cpp-python
 # huggingface
 RUN pip install transformers accelerate bitsandbytes sentence_transformers 
 # generic
-RUN pip install gradio langchain langchain-text-splitters langchain-community langchain-core python_dotenv
+RUN pip install gradio langchain langchain-text-splitters langchain-community langchain-core python_dotenv unstructured[all]
 
 
 WORKDIR /app
