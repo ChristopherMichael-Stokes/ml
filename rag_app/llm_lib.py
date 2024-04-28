@@ -1,8 +1,5 @@
-import itertools
-import os
 import threading
 from functools import partial
-from operator import itemgetter
 from pathlib import Path
 from typing import (
     IO,
@@ -42,18 +39,15 @@ from transformers import (
     TextIteratorStreamer,
     pipeline,
 )
-from transformers.generation.streamers import BaseStreamer
 
 try:
-    import flash_attn  # noqa
-
+    __import__("flash_attn")
     HAS_FLASH_ATTENTION = True
-except ModuleNotFoundError:
+except ImportError:
     HAS_FLASH_ATTENTION = False
 
 
 CHAT_ROLE = Literal["assistant"] | Literal["user"]
-
 GENERATION_THREADS: List[threading.Thread] = []
 
 
@@ -105,8 +99,8 @@ def load_ggml_model(model_path: str, load_options: dict) -> Llama:
     llm = Llama(
         model_path=model_path,
         stream=True,
-        **load_options,
         chat_format="chatml",
+        **load_options,
     )
 
     return llm
@@ -188,17 +182,17 @@ class StreamingLLM:
         model_base: Literal["ggml", "hf"],
         model_weights: str,
         load_params: dict,
-        generate_params: dict,
+        generate_params: Optional[dict] = None,
         system_prompt: Optional[str] = None,
     ):
+        assert model_base in ["ggml", "hf"], "Invalid model format chosen"
         self.model_base = model_base
         self.model_weights = model_weights
         self.load_params = load_params
-        self.generate_params = generate_params
+        self.generate_params = generate_params if generate_params else {}
         self.chat_history = ChatHistory.model_validate(
             {"history": [{"role": "system", "content": system_prompt}] if system_prompt else []}
         )
-        # add_message(self.chat_history, "user", "what is the capital of france")
 
         if model_base == "hf":
             self.llm, self.streamer = load_hf_model(model_weights, load_params, generate_params)
@@ -214,7 +208,6 @@ class StreamingLLM:
                 generation_params=generate_params,
                 chat_history=self.chat_history,
             )
-            self.eos_token = self.llm.tokenizer_.detokenize([self.llm.token_eos()])[0]
 
     def generate(self, prompt):
         # 1. do some shit with chat history
@@ -228,12 +221,15 @@ class StreamingLLM:
 
         next(generation)  # skips the first 'assistant' token
         for part in generation:
-            if part == self.eos_token:
-                break
-            elif part.endswith(self.eos_token):
-                text += part[: part.rindex(self.eos_token)]
+            if self.model_base == "hf":
+                if part == self.eos_token:
+                    break
+                elif part.endswith(self.eos_token):
+                    text += part[: part.rindex(self.eos_token)]
+                else:
+                    text += part
             else:
-                text += part
+                text = part
             yield text
 
         # 4. after end of generator parse the output and add it back to chat history
