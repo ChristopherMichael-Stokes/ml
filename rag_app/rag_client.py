@@ -1,74 +1,52 @@
+import logging
 from pathlib import Path
 
 import gradio as gr
 import llm_lib
-import torch
-from transformers import BitsAndBytesConfig
+from fastapi import FastAPI
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
-DEBUG = True
-if DEBUG:
-    base_path = Path("./rag_app")
-else:
-    base_path = Path("./")
+# Create a logger object
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
-# TODO: add config / env file
+# Create a file handler which logs even debug messages
+fh = logging.FileHandler("output/info.log", mode="w")
+fh.setLevel(logging.DEBUG)
 
-load_params = {
-    # "quantization_config": BitsAndBytesConfig(
-    #     load_in_4bit=True,
-    #     bnb_4bit_quant_type="nf4",
-    #     bnb_4bit_use_double_quant=True,
-    #     bnb_4bit_compute_dtype=torch.bfloat16,
-    # ),
-    "torch_dtype": "auto",
-    "device_map": "auto",
-}
 
-generate_params = {
-    "temperature": 0.5,
-    "max_new_tokens": 8192,
-}
+# Create formatter and add it to the handlers
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh.setFormatter(formatter)
 
-system_prompt = (
-    "You are an expert career adviser and life coach helping users to plan their future."
-    " Please respond truthfully and accurately, and if there is any CONTEXT information then use it to"
-    " inform your answers.  Keep answers brief, do not repeat your self and do not include redundant information.",
-)
+# Add handlers to the logger
+log.addHandler(fh)
+
+app = FastAPI()
+
+
+log.info("Reading config")
+base_conf = OmegaConf.load(Path(__file__).parent / "config.yaml")
+cli_conf = OmegaConf.from_cli()
+conf = OmegaConf.merge(base_conf, cli_conf)
+
+load_params = conf.load_params if "load_params" in conf else {}
+generate_params = conf.generation_params if "generation_params" in conf else {}
+system_prompt = conf.system_prompt if "system_prompt" in conf else None
+
+log.info("Loading llm")
 llm = llm_lib.StreamingLLM(
-    "hf",
-    str(base_path / "qwen-2-7b-4bit/"),
-    # str(base_path / "qwen-2-7b/"),
-    # "Qwen/Qwen1.5-7B-Chat-GPTQ-Int4",
-    load_params,
-    generate_params,
-)  # , system_prompt=system_prompt)
+    conf.model_backend, conf.llm_model, load_params, generate_params, system_prompt
+)
 
-# log.info("loading embedding")
-embedder = llm_lib.construct_bge_model(str(base_path / "bge-large"))
-# log.info("configuring app")
+log.info("Loading embedding model")
+embedder = llm_lib.construct_bge_model(conf.embed_model)
 
 
 def echo(message, history):
     # TODO: implement some prompt token reduction techniques
     # ... or just limit the chat window to the make tokens length to preserve
     # fidelity
-
-    # for thread in llm_lib.GENERATION_THREADS:
-    #     # TODO: bug here with threads not getting closed properly when
-    #     # 'stop is clicked, only terminating properly when the latest thread
-    #     # is consumed
-    #     print(thread)
-    #     thread.join()  # Don't like this as could continue generating very long prompt
-    # Best solution for now is to just disable stop button as it cannot be trusted !!!
-    for thread in llm_lib.GENERATION_THREADS:
-        thread._stp
-        thread.interrupt()
-
-    # TODO: fix the parsing of history thing, it's just an unlabeled list of all messages
-    # from both sides:  Input should be a valid dictionary or instance of ChatMessage [type=model_type, input_value=['Can you give detailed a... with your job search!'], input_type=list]
-
-    # history = llm_lib.ChatHistory.model_validate({"history": history})
-    # llm.chat_history.history = history.history
     llm.chat_history.history = []
     for i, content in enumerate(history):
         llm.chat_history.history.append(
@@ -94,18 +72,14 @@ def echo(message, history):
         yield part
 
 
+log.info("Building ui")
+
 demo = gr.ChatInterface(
     fn=echo,
-    # examples=[{"text": "hello"}, {"text": "hola"}, {"text": "merhaba"}],
     title="Sophias Echo Bot",
     multimodal=True,
-    stop_btn=gr.Button("Don't click, I'm broken 🥲🥺"),
+    stop_btn=gr.Button("Don't click, I'm broken 🥲🥺") if conf.model_backend == "hf" else "Stop",
 ).queue()
 
-
-# log.info("starting app")
-demo.launch(
-    server_name="0.0.0.0",
-    server_port=7860,
-)
-# log.info("app up")
+log.info("Launching server")
+app = gr.mount_gradio_app(app, demo, path="/")

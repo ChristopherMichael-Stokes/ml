@@ -4,13 +4,13 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    entrypoint: ["python","rag_client.py"]
     volumes:
-      - ./qwen-2-7b:/app/qwen-2-7b
+      - ./llama3:/app/llama3
       - ./bge-large:/app/bge-large
       - ./output:/app/output
     ports: 
       - 7860:7860
+      - 8000:8000
     # Pytorch / cuda configuration options
     ipc: host
     ulimits:
