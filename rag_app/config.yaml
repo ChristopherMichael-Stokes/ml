@@ -1,0 +1,29 @@
+embed_model: ${base_path}/bge-large
+debug: True
+# base_path: rag_app
+base_path: "." 
+
+llm_model: ${base_path}/llama3/ggml-model-Q6_K.gguf
+model_backend: ggml 
+load_params:
+  n_gpu_layers: -1
+  n_ctx: 8192
+generation_params:
+  temperature: 0.6
+  top_p: 0.9
+
+# llm_model:  ${base_path}/qwen-2-7b-4bit
+# model_backend: hf
+# load_params:
+#   torch_dtype: auto
+#   device_map: auto
+
+# generation_params: 
+#   max_new_tokens: 8192
+
+# system_prompt: >-
+#   You are an expert career adviser and life coach helping users
+#    to plan their future. Please respond truthfully and accurately,
+#   and if there is any CONTEXT information then use it to inform
+#   your answers.  Keep answers brief, do not repeat yourself and
+#   do not include redundant information.

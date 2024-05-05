@@ -38,13 +38,18 @@ RUN pip install https://github.com/Dao-AILab/flash-attention/releases/download/v
 RUN pip install tensorflow keras_nlp tensorflow_datasets 
 RUN pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 # Transformer libraries
-RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
+
+RUN pip install --upgrade --no-cache-dir llama-cpp-python \
+  --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu122
+# RUN CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
+# RUN CMAKE_ARGS="-DLLAMA_CUDA=on" pip install --upgrade --no-cache-dir llama-cpp-python
+
 RUN pip install git+https://github.com/huggingface/transformers
-RUN pip install accelerate bitsandbytes datasets evaluate gradio lm_eval sentence_transformers autoawq
+RUN pip install accelerate bitsandbytes datasets evaluate gradio lm_eval sentence_transformers autoawq sentencepiece
 # General python libs
 RUN pip install jupyter pandas matplotlib scikit-learn plotly catboost \
-        python_dotenv langchain langchain-community langchain-core langchain-text-splitters 
-
+        python_dotenv langchain langchain-community langchain-core langchain-text-splitters \
+        omegaconf
 
 RUN chsh -s /bin/zsh
 RUN yes | sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"

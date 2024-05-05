@@ -2,6 +2,7 @@ version: '3.8'
 services:
   devcontainer:
     image: devcontainer-ml/devcontainer-ml
+    user: ${UID}:${GID}
     build:
       context: .
       dockerfile: ./dev.Dockerfile
