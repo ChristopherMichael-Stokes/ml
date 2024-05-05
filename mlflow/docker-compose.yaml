@@ -27,14 +27,16 @@ services:
     build: 
       context: .
       dockerfile: mlflow.Dockerfile
-    command: mlflow server --host 0.0.0.0 --port 5021 --backend-store-uri "postgresql+psycopg2://postgres:postgres@database:5432/vector_db"
+    command: mlflow server --host 0.0.0.0 --port 5021 --backend-store-uri "postgresql+psycopg2://postgres:postgres@database:5432/vector_db" 
     ports: 
       - 5021:5021
     volumes:
       - mlruns:/mlruns
+      - artifacts:/root/artifacts
 
 
 volumes:
   pgadmin-data:
   pgdata:
   mlruns:
+  artifacts:
